@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-                                      #
 #-----------------------------------------------------------#
 #burpExtender/  extractor.py version 0.10                   #
-#Author: linglingqi  (2016.07.28)                           #
+#Author: linglingqi  (2016.08.01)                           #
 #-----------------------------------------------------------#
 
 from burp import IBurpExtender
@@ -38,7 +38,7 @@ class BurpExtender(IBurpExtender,ITab,IHttpListener,ItemListener):
         self._jTextFieldFixedDomain=swing.JTextField('')
         self._jTextFieldFixedDomain.setPreferredSize(Dimension(200,27))
         self._jCheckCustomerRegex=swing.JCheckBox('Customer Regex:')
-        self._jComboBoxCustomerRegex=swing.JComboBox(['<a href="([^/].[^"<>()]+?)"','<a target="_blank" href="(.[^"<>]*?)"','<a href="(.[^"<>]*?)" target="_blank">','//(.[^/"<>]*?)/','[\/>]([a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z0-9.]*?)[\/<]','\\b[a-zA-Z0-9<>/._%+-]+@[a-zA-Z0-9<>/.-]+\.[a-zA-Z<>/]{2,8}\\b','\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\\b'],editable=True)
+        self._jComboBoxCustomerRegex=swing.JComboBox(['<a href="([^/].[^"<>()]+?)"','<a target="_blank" href="(.[^"<>]*?)"','<a href="(.[^"<>]*?)" target="_blank">','//(.[^/"<>]*?)/','[\/>]([a-zA-Z0-9]+\.[a-zA-Z0-9]+\.[a-zA-Z0-9.]*?)[\/<]','\\b[a-zA-Z0-9<>/._%+-]+@[a-zA-Z0-9<>/.-]+\.[a-zA-Z<>/]{2,8}\\b','\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\\b','Location: ([^/].[^"<>()]+?)\\n'],editable=True)
         self._jComboBoxCustomerRegex.setPreferredSize(Dimension(350,27))
         self._jComboBoxCustomerRegex.selectedIndex=-1
         tmpBoxVertical=swing.Box.createVerticalBox()
@@ -139,14 +139,12 @@ class BurpExtender(IBurpExtender,ITab,IHttpListener,ItemListener):
                 if toolFlag==64 or toolFlag==32 or toolFlag==8 or toolFlag==4: 
                     if not messageIsRequest:
                         bytesResponse=messageInfo.getResponse()
-                        analyzedResponse=self._helpes.analyzeResponse(bytesResponse)
-                        bytesBody=bytesResponse[analyzedResponse.getBodyOffset():]
-                        stringsBody=bytesBody.tostring()
+                        stringsResponse=bytesResponse.tostring()
                         
                         #extract links from google search results
                         if self._jCheckGoogleEngineUrls.isSelected():
                             patternUrls=re.compile(r'<a href="(.[^"<>()]+?)"')
-                            urls=re.findall(patternUrls, stringsBody)
+                            urls=re.findall(patternUrls, stringsResponse)
                             urlsNonrepetition=list(set(urls))
                             urlsNonrepetition.sort(key=urls.index)
                             domains=[]
@@ -171,7 +169,7 @@ class BurpExtender(IBurpExtender,ITab,IHttpListener,ItemListener):
                         #extract links from baidu search results
                         if self._jCheckBaiduEngineUrls.isSelected():
                             patternUrls=re.compile(r'<a target="_blank" href="(.[^"<>]*?)"|<a href="(.[^"<>]*?)" target="_blank">')
-                            urls=re.findall(patternUrls,stringsBody)
+                            urls=re.findall(patternUrls,stringsResponse)
                             urlsNonrepetition=list(set(urls))
                             urlsNonrepetition.sort(key=urls.index)
                             domains=[]
@@ -198,7 +196,7 @@ class BurpExtender(IBurpExtender,ITab,IHttpListener,ItemListener):
                         #extract Email from html
                         if self._jCheckExtractEmail.isSelected():
                             patternEmails=re.compile(r'\b[a-zA-Z0-9<>/._%+-]+@[a-zA-Z0-9<>/.-]+\.[a-zA-Z<>/]{2,8}\b')
-                            emails=re.findall(patternEmails, stringsBody)
+                            emails=re.findall(patternEmails, stringsResponse)
                             emailsNonrepetition=list(set(emails))
                             emailsNonrepetition.sort(key=emails.index)
                             getEmails=[]
@@ -219,7 +217,7 @@ class BurpExtender(IBurpExtender,ITab,IHttpListener,ItemListener):
                         #ectract string with defined regex
                         if self._jCheckCustomerRegex.isSelected():
                             patternStrings=re.compile(r'%s'%(str(self._jComboBoxCustomerRegex.getSelectedItem())))
-                            getStrings=re.findall(patternStrings, stringsBody)
+                            getStrings=re.findall(patternStrings, stringsResponse)
                             getStringsNonrepetition=list(set(getStrings))
                             getStringsNonrepetition.sort(key=getStrings.index)
                             for getString in getStringsNonrepetition:
